@@ -1,0 +1,14 @@
+apiVersion: rbac-controller.ggh41th.io/v1alpha1
+kind: RBACRule
+metadata:
+  name: testrule
+spec:
+  bindings:
+  - name: test-binding
+    subjects: 
+    - kind: ServiceAccount
+      name: test-sa
+    - kind: User
+      name: TestUser@rbac.com
+    roleBindings:
+    - role: test-role
