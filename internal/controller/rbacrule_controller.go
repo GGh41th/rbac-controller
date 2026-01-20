@@ -56,6 +56,12 @@ type RBACRuleReconciler struct {
 // +kubebuilder:rbac:groups=rbac-controller.ggh41th.io,resources=rbacrules,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac-controller.ggh41th.io,resources=rbacrules/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rbac-controller.ggh41th.io,resources=rbacrules/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
 
 func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	RBACRule := &rbaccontrollerv1.RBACRule{}

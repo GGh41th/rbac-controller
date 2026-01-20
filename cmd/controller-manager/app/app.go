@@ -2,10 +2,12 @@ package app
 
 import (
 	"crypto/tls"
+	"os"
 
 	rbaccontrollerv1 "github.com/GGh41th/rbac-controller/api/v1alpha1"
 	"github.com/GGh41th/rbac-controller/cmd/controller-manager/app/options"
 	"github.com/GGh41th/rbac-controller/internal/controller"
+	rbaccontrollerv1webhook "github.com/GGh41th/rbac-controller/internal/webhook/v1alpha1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -15,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 const (
@@ -69,6 +72,23 @@ func runControllerManager(opts *options.ControllerManagerOptions) error {
 		tlsOpts = append(tlsOpts, disableHTTP2)
 	}
 
+	// Initial webhook TLS options
+	webhookTLSOpts := tlsOpts
+	webhookServerOptions := webhook.Options{
+		TLSOpts: webhookTLSOpts,
+	}
+
+	if len(opts.WebhookCertPath) > 0 {
+		setupLog.Info("Initializing webhook certificate watcher using provided certificates",
+			"webhook-cert-path", opts.WebhookCertPath, "webhook-cert-name", opts.WebhookCertName, "webhook-cert-key", opts.WebhookCertKey)
+
+		webhookServerOptions.CertDir = opts.WebhookCertPath
+		webhookServerOptions.CertName = opts.WebhookCertName
+		webhookServerOptions.KeyName = opts.WebhookCertKey
+	}
+
+	webhookServer := webhook.NewServer(webhookServerOptions)
+
 	metricsServerOptions := metricsserver.Options{
 		BindAddress:   opts.MetricsAddr,
 		SecureServing: opts.SecureMetrics,
@@ -102,6 +122,7 @@ func runControllerManager(opts *options.ControllerManagerOptions) error {
 		LeaderElection:   opts.EnableLeaderElection,
 		LeaderElectionID: electionName,
 		PprofBindAddress: opts.ProbeBindAddress,
+		WebhookServer:    webhookServer,
 	})
 
 	if err != nil {
@@ -120,6 +141,7 @@ func runControllerManager(opts *options.ControllerManagerOptions) error {
 
 	if err := rbaccontrollerv1.AddToScheme(mgr.GetScheme()); err != nil {
 		setupLog.Error(err, "unable to register scheme", "api", rbaccontrollerv1.GroupVersion.String())
+		return err
 	}
 
 	// TODO(GGh41th) , wrap the registration with the manager in a helper (e.g Add)
@@ -133,6 +155,12 @@ func runControllerManager(opts *options.ControllerManagerOptions) error {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to setup controller with manager")
 		return err
+	}
+	if os.Getenv("ENABLE_WEBHOOK") != "false" {
+		if err := rbaccontrollerv1webhook.SetupRBACRuleWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to register webhook with manager")
+			return err
+		}
 	}
 
 	rootCtx := signals.SetupSignalHandler()

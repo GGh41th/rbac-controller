@@ -49,9 +49,9 @@ type Subject struct {
 // +kubebuilder:validation:XValidation:rule="(has(self.role) || has(self.clusterRole)",message="at least one role must be specified"
 type RoleBinding struct {
 	// +optional
-	Role string `json:"role"`
+	Role string `json:"role,omitempty"`
 	// +optional
-	ClusterRole string `json:"clusterRole"`
+	ClusterRole string `json:"clusterRole,omitempty"`
 	// +optional
 	Namespaces []string `json:"namespaces,omitempty"`
 	// +optional
@@ -65,25 +65,16 @@ type ClusterRoleBinding struct {
 	ClusterRole string `json:"clusterRole"`
 }
 
+// +kubebuilder:validation:XValidation:rule="(has(self.roleBindings) || has(self.clusterRoleBindings))",message="RoleBindings or ClusterRoleBindings should be specified"
 type Binding struct {
 	// +required
 	Name string `json:"name"`
 	// +required
 	Subjects []Subject `json:"subjects"`
 	// +optional
-	RoleBindings []RoleBinding `json:"roleBindings"`
+	RoleBindings []RoleBinding `json:"roleBindings,omitempty"`
 	// +optional
-	ClusterRoleBindings []ClusterRoleBinding `json:"clusterRoleBindings"`
-	// start Btime specify the binding creation time , refer to the docs for
-	// possible use cases.
-	// +optional
-	// +kubebuilder:validation:Format="date-time"
-	StartTime metav1.Time `json:"startTime,omitempty"`
-	// start time specify the binding creation time , refer to the docs for
-	// possible use cases.
-	// +optional
-	// +kubebuilder:validation:Format="date-time"
-	EndTime metav1.Time `json:"endTime,omitempty"`
+	ClusterRoleBindings []ClusterRoleBinding `json:"clusterRoleBindings,omitempty"`
 }
 
 // RBACRuleSpec defines the desired state of RBACRule
@@ -94,12 +85,12 @@ type RBACRuleSpec struct {
 	// binding will override it.
 	// +optional
 	// +kubebuilder:validation:Format="date-time"
-	StartTime metav1.Time `json:"startTime,omitempty"`
+	StartTime metav1.Time `json:"startTime,omitempty,omitzero"`
 	// If defined it will apply to all bindings. Specifying it at individual
 	// binding will override it.
 	// +optional
 	// +kubebuilder:validation:Format="date-time"
-	EndTime metav1.Time `json:"endTime,omitempty"`
+	EndTime metav1.Time `json:"endTime,omitempty,omitzero"`
 }
 
 // RBACRuleStatus defines the observed state of RBACRule.
