@@ -29,24 +29,24 @@ var (
 	ServiceAccount SubjectType = "ServiceAccount"
 )
 
-// we did not embedd the rbac.Subject type because we don't need the namespace
-// field.
+// +kubebuilder:validation:XValidation:rule="(has(self.namespaces) || has(self.nameSpaceSelector) || has(self.namespaceMatchExpression))",message="at least one namespace must be specified"
 type Subject struct {
 	// +required
 	Kind SubjectType `json:"kind"`
 	// +required
 	Name string `json:"name"`
-	// +required
-	// +kubebuilder:default={"default"}
+	// +optional
 	Namespaces []string `json:"namespaces"`
 	// +optional
 	NameSpaceSelector metav1.LabelSelector `json:"nameSpaceSelector,omitempty"`
+	// +optional
+	NamespaceMatchExpression string `json:"namespaceMatchExpression,omitempty"`
 	// +optional
 	CreateSA bool `json:"createSA,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="(has(self.namespaces) || has(self.nameSpaceSelector) || has(self.namespaceMatchExpression))",message="at least one namespace must be specified"
-// +kubebuilder:validation:XValidation:rule="(has(self.role) || has(self.clusterRole) || has(self.namespaceMatchExpression))",message="at least one role must be specified"
+// +kubebuilder:validation:XValidation:rule="(has(self.role) || has(self.clusterRole)",message="at least one role must be specified"
 type RoleBinding struct {
 	// +optional
 	Role string `json:"role"`
