@@ -1,0 +1,9 @@
+apiVersion: rbac-controller.io.rbaccontroller.ggh41th.io/v1alpha1
+kind: RBACRule
+metadata:
+  labels:
+    app.kubernetes.io/name: rbac-controller
+    app.kubernetes.io/managed-by: kustomize
+  name: rbacrule-sample
+spec:
+  # TODO(user): Add fields here

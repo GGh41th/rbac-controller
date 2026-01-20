@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- rbac-controller.io_v1alpha1_rbacrule.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
