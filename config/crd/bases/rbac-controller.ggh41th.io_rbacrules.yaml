@@ -51,12 +51,6 @@ spec:
                         - clusterRole
                         type: object
                       type: array
-                    endTime:
-                      description: |-
-                        start time specify the binding creation time , refer to the docs for
-                        possible use cases.
-                      format: date-time
-                      type: string
                     name:
                       type: string
                     roleBindings:
@@ -127,19 +121,10 @@ spec:
                           rule: (has(self.namespaces) || has(self.nameSpaceSelector)
                             || has(self.namespaceMatchExpression))
                         - message: at least one role must be specified
-                          rule: (has(self.role) || has(self.clusterRole) || has(self.namespaceMatchExpression))
+                          rule: (has(self.role) || has(self.clusterRole))
                       type: array
-                    startTime:
-                      description: |-
-                        start Btime specify the binding creation time , refer to the docs for
-                        possible use cases.
-                      format: date-time
-                      type: string
                     subjects:
                       items:
-                        description: |-
-                          we did not embedd the rbac.Subject type because we don't need the namespace
-                          field.
                         properties:
                           createSA:
                             type: boolean
@@ -200,22 +185,28 @@ spec:
                                 type: object
                             type: object
                             x-kubernetes-map-type: atomic
+                          namespaceMatchExpression:
+                            type: string
                           namespaces:
-                            default:
-                            - default
                             items:
                               type: string
                             type: array
                         required:
                         - kind
                         - name
-                        - namespaces
                         type: object
+                        x-kubernetes-validations:
+                        - message: at least one namespace must be specified
+                          rule: (has(self.namespaces) || has(self.nameSpaceSelector)
+                            || has(self.namespaceMatchExpression))
                       type: array
                   required:
                   - name
                   - subjects
                   type: object
+                  x-kubernetes-validations:
+                  - message: RoleBindings or ClusterRoleBindings should be specified
+                    rule: (has(self.roleBindings) || has(self.clusterRoleBindings))
                 type: array
               endTime:
                 description: |-
