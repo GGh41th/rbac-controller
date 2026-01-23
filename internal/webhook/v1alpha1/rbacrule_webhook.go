@@ -113,11 +113,13 @@ func (v *RBACRuleCustomValidator) ValidateCreate(_ context.Context, obj runtime.
 	}
 	rbacrulelog.Info("Validation for RBACRule upon creation", "name", rbacrule.GetName())
 
-	if time.Now().After(rbacrule.Spec.StartTime.Time) {
+	start := rbacrule.Spec.StartTime.Time
+	end := rbacrule.Spec.EndTime.Time
+	if start != (time.Time{}) && time.Now().After(start) {
 		return nil, fmt.Errorf("start time should not be earlier than now")
 	}
 
-	if rbacrule.Spec.StartTime.Time.After(rbacrule.Spec.EndTime.Time) {
+	if end != (time.Time{}) && rbacrule.Spec.StartTime.Time.After(rbacrule.Spec.EndTime.Time) {
 		return nil, fmt.Errorf("start time should not be higher than end time")
 	}
 
