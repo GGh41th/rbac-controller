@@ -3,14 +3,20 @@ kind: RBACRule
 metadata:
   name: testrule
 spec:
-  startTime: "2026-01-23T21:53:36Z"
+  startTime: "2026-01-23T20:54:00Z"
   endTime: "2027-02-22T21:53:36Z"
   bindings:
   - name: test-binding
     subjects: 
     - kind: ServiceAccount
       name: test-sa
+      namespaces:
+        - default
     - kind: User
       name: TestUser@rbac.com
+      namespaces:
+      - deafult
     roleBindings:
     - role: test-role2
+      namespaces:
+        - default

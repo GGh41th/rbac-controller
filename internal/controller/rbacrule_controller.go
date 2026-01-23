@@ -88,6 +88,13 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, r.reconcileDelete(ctx, RBACRule)
 	}
 
+	start := RBACRule.Spec.StartTime.Time
+	if start != (time.Time{}) && start.After(time.Now()) {
+		period := time.Until(start)
+		r.Log.Info("Rule shouldn't be active yet , waiting for start time", "Wait Period", period)
+		return ctrl.Result{RequeueAfter: period}, nil
+	}
+
 	if RBACRule.Spec.Bindings != nil {
 		RBAClabels := map[string]string{constants.RBACRuleLabel: RBACRule.Name}
 		ownerRef := []metav1.OwnerReference{
