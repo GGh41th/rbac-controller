@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -112,7 +113,22 @@ func (v *RBACRuleCustomValidator) ValidateCreate(_ context.Context, obj runtime.
 	}
 	rbacrulelog.Info("Validation for RBACRule upon creation", "name", rbacrule.GetName())
 
-	// TODO(user): fill in your validation logic upon object creation.
+	start := rbacrule.Spec.StartTime.Time
+	end := rbacrule.Spec.EndTime.Time
+	if start != (time.Time{}) && time.Now().After(start) {
+		return nil, fmt.Errorf("start time should not be earlier than now")
+	}
+
+	if end != (time.Time{}) {
+
+		if end.Before(time.Now()) {
+			return nil, fmt.Errorf("end time should not be earlier than now")
+		}
+
+		if start.After(end) {
+			return nil, fmt.Errorf("start time should not be higher than end time")
+		}
+	}
 
 	return nil, nil
 }
@@ -126,7 +142,6 @@ func (v *RBACRuleCustomValidator) ValidateUpdate(_ context.Context, oldObj, newO
 	rbacrulelog.Info("Validation for RBACRule upon update", "name", rbacrule.GetName())
 
 	// TODO(user): fill in your validation logic upon object update.
-
 	return nil, nil
 }
 

@@ -88,6 +88,13 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, r.reconcileDelete(ctx, RBACRule)
 	}
 
+	start := RBACRule.Spec.StartTime.Time
+	if start != (time.Time{}) && start.After(time.Now()) {
+		period := time.Until(start)
+		r.Log.Info("Rule shouldn't be active yet , waiting for start time", "Wait Period", period)
+		return ctrl.Result{RequeueAfter: period}, nil
+	}
+
 	if RBACRule.Spec.Bindings != nil {
 		RBAClabels := map[string]string{constants.RBACRuleLabel: RBACRule.Name}
 		ownerRef := []metav1.OwnerReference{
@@ -142,6 +149,18 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 					}
 				}
 			}
+		}
+	}
+	end := RBACRule.Spec.EndTime.Time
+	if end != (time.Time{}) && end.After(time.Now()) {
+		period := time.Until(end)
+		r.Log.Info("Rule will be scheduled for deletion", "Time until deletion", period)
+		return ctrl.Result{RequeueAfter: period}, nil
+	} else if end.Before(time.Now()) {
+		err := r.Delete(ctx, RBACRule)
+		if err != nil {
+			r.Log.Error(err, "error deleting resource")
+			return ctrl.Result{}, nil
 		}
 	}
 	return ctrl.Result{}, nil
