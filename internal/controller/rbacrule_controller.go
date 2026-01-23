@@ -151,6 +151,18 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			}
 		}
 	}
+	end := RBACRule.Spec.EndTime.Time
+	if end != (time.Time{}) && end.After(time.Now()) {
+		period := time.Until(end)
+		r.Log.Info("Rule will be scheduled for deletion", "Time until deletion", period)
+		return ctrl.Result{RequeueAfter: period}, nil
+	} else if end.Before(time.Now()) {
+		err := r.Delete(ctx, RBACRule)
+		if err != nil {
+			r.Log.Error(err, "error deleting resource")
+			return ctrl.Result{}, nil
+		}
+	}
 	return ctrl.Result{}, nil
 }
 
