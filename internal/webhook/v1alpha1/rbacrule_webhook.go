@@ -119,8 +119,15 @@ func (v *RBACRuleCustomValidator) ValidateCreate(_ context.Context, obj runtime.
 		return nil, fmt.Errorf("start time should not be earlier than now")
 	}
 
-	if end != (time.Time{}) && rbacrule.Spec.StartTime.Time.After(rbacrule.Spec.EndTime.Time) {
-		return nil, fmt.Errorf("start time should not be higher than end time")
+	if end != (time.Time{}) {
+
+		if end.Before(time.Now()) {
+			return nil, fmt.Errorf("end time should not be earlier than now")
+		}
+
+		if start.After(end) {
+			return nil, fmt.Errorf("start time should not be higher than end time")
+		}
 	}
 
 	return nil, nil
