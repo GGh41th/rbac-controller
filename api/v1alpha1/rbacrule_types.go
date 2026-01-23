@@ -36,7 +36,7 @@ type Subject struct {
 	// +required
 	Name string `json:"name"`
 	// +optional
-	Namespaces []string `json:"namespaces"`
+	Namespaces []string `json:"namespaces,omitempty"`
 	// +optional
 	NameSpaceSelector metav1.LabelSelector `json:"nameSpaceSelector,omitempty"`
 	// +optional
@@ -46,7 +46,7 @@ type Subject struct {
 }
 
 // +kubebuilder:validation:XValidation:rule="(has(self.namespaces) || has(self.nameSpaceSelector) || has(self.namespaceMatchExpression))",message="at least one namespace must be specified"
-// +kubebuilder:validation:XValidation:rule="(has(self.role) || has(self.clusterRole)",message="at least one role must be specified"
+// +kubebuilder:validation:XValidation:rule="(has(self.role) || has(self.clusterRole))",message="at least one role must be specified"
 type RoleBinding struct {
 	// +optional
 	Role string `json:"role,omitempty"`

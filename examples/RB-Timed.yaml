@@ -1,0 +1,16 @@
+apiVersion: rbac-controller.ggh41th.io/v1alpha1
+kind: RBACRule
+metadata:
+  name: testrule
+spec:
+  startTime: "2026-01-23T21:53:36Z"
+  endTime: "2027-02-22T21:53:36Z"
+  bindings:
+  - name: test-binding
+    subjects: 
+    - kind: ServiceAccount
+      name: test-sa
+    - kind: User
+      name: TestUser@rbac.com
+    roleBindings:
+    - role: test-role2
