@@ -126,8 +126,6 @@ spec:
                     subjects:
                       items:
                         properties:
-                          createSA:
-                            type: boolean
                           kind:
                             enum:
                             - User
@@ -208,6 +206,11 @@ spec:
                   - message: RoleBindings or ClusterRoleBindings should be specified
                     rule: (has(self.roleBindings) || has(self.clusterRoleBindings))
                 type: array
+              createSA:
+                default: true
+                description: If specified it controls wether inexistant SAs will be
+                  created or no.
+                type: boolean
               endTime:
                 description: |-
                   If defined it will apply to all bindings. Specifying it at individual

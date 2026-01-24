@@ -41,8 +41,6 @@ type Subject struct {
 	NameSpaceSelector metav1.LabelSelector `json:"nameSpaceSelector,omitempty"`
 	// +optional
 	NamespaceMatchExpression string `json:"namespaceMatchExpression,omitempty"`
-	// +optional
-	CreateSA bool `json:"createSA,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="(has(self.namespaces) || has(self.nameSpaceSelector) || has(self.namespaceMatchExpression))",message="at least one namespace must be specified"
@@ -91,6 +89,10 @@ type RBACRuleSpec struct {
 	// +optional
 	// +kubebuilder:validation:Format="date-time"
 	EndTime metav1.Time `json:"endTime,omitempty,omitzero"`
+	//If specified it controls wether inexistant SAs will be created or no.
+	// +optional
+	// +default:value=true
+	CreateSA bool `json:"createSA"`
 }
 
 // RBACRuleStatus defines the observed state of RBACRule.

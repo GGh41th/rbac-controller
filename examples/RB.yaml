@@ -8,7 +8,13 @@ spec:
     subjects: 
     - kind: ServiceAccount
       name: test-sa
+      namespaces:
+      - default
     - kind: User
       name: TestUser@rbac.com
+      namespaces:
+      - default
     roleBindings:
     - role: test-role
+      namespaces:
+      - default
