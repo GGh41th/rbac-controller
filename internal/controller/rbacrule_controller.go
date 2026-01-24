@@ -88,6 +88,8 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, r.reconcileDelete(ctx, RBACRule)
 	}
 
+	//if the user provided a start time we stop processing and requeue
+	//when the start time comes.
 	start := RBACRule.Spec.StartTime.Time
 	if start != (time.Time{}) && start.After(time.Now()) {
 		period := time.Until(start)
@@ -100,6 +102,9 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		ownerRef := []metav1.OwnerReference{
 			*metav1.NewControllerRef(RBACRule, rbaccontrollerv1.GroupVersion.WithKind("RBACRule")),
 		}
+
+		//we loop over the bindings , parse each individual binding and create
+		//the parsed ressources
 		for _, b := range RBACRule.Spec.Bindings {
 			p := &parser.Parser{
 				Client: r.Client,
@@ -107,8 +112,13 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			if err := p.Parse(ctx, &b, RBAClabels, ownerRef, RBACRule.Name); err != nil {
 				r.Log.Error(err, "failed to parse RBACBinding")
 			}
+
+			//if we have SA subjects , we need to handle them.
 			for _, s := range p.Subjects {
 				if s.Kind == string(rbaccontrollerv1.ServiceAccount) {
+
+					// if createSA is set to false , fail and don't requeue until the resource
+					// is updated.
 					if err := r.checkNamespace(ctx, s.Namespace, ownerRef); err != nil {
 						r.Log.Error(err, "Failed to create namespace", "namespace", s.Namespace)
 						return reconcile.Result{RequeueAfter: 500 * time.Millisecond}, nil
@@ -121,6 +131,7 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 				}
 			}
 
+			//we create the cluster role bindings if we have any.
 			for _, crb := range p.ClusterRoleBindings {
 				if err := r.createCRB(ctx, &crb); err != nil {
 					r.Log.Error(err, "Failed to create CRB", "name", crb.Name)
@@ -136,6 +147,7 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 			}
 
+			//we create the role bindings if we have any.
 			for _, rb := range p.RoleBindings {
 				if err := r.createCR(ctx, &rb); err != nil {
 					r.Log.Error(err, "Failed to create RB", "name", rb.Name)
@@ -151,6 +163,8 @@ func (r *RBACRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			}
 		}
 	}
+
+	//if the user provided an end time , we take care of it here.
 	end := RBACRule.Spec.EndTime.Time
 	if end != (time.Time{}) && end.After(time.Now()) {
 		period := time.Until(end)
