@@ -1,121 +1,198 @@
-# rbac-controller
-// TODO(user): Add simple overview of use/purpose
+# RBAC Controller
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+[![Go Report Card](https://goreportcard.com/badge/github.com/GGh41th/rbac-controller)](https://goreportcard.com/report/github.com/GGh41th/rbac-controller)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+A Kubernetes controller that simplifies RBAC management by providing a declarative way to manage RoleBindings and ClusterRoleBindings across multiple namespaces.
+
+## Overview
+
+RBAC Controller extends Kubernetes with a custom resource `RBACRule` that allows you to:
+
+- Define RoleBindings and ClusterRoleBindings for multiple subjects in a single manifest
+- Automatically propagate bindings across multiple namespaces using label selectors or match expressions
+- Manage RBAC for Users, Groups, and ServiceAccounts with a unified API
+- Reduce boilerplate when managing RBAC across many namespaces
+
+## Features
+
+- 🎯 **Multi-namespace binding**: Apply RoleBindings across multiple namespaces 
+- 🔐 **Unified RBAC management**: Manage both RoleBindings and ClusterRoleBindings in one resource
+- 🏷️ **Label-based selection**: Use namespace label selectors for dynamic binding management
+
 
 ## Getting Started
 
 ### Prerequisites
-- go version v1.24.6+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+- A running Kubernetes cluster (you can use kubeadm,minikube,kind etc.. )
+- Go 1.25+ (for development)
 
-```sh
-make docker-build docker-push IMG=<some-registry>/rbac-controller:tag
+### Installation
+
+Install the controller using kubectl:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/GGh41th/rbac-controller/main/dist/install.yaml
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
+Or build and deploy manually:
 
-**Install the CRDs into the cluster:**
+```bash
+# Install CRDs
+make docker-build registry/user/repository:tag
 
-```sh
+# Deploy controller
+make docker-deploy IMG=registry/user/repository:tag
+```
+
+### Quick Start
+
+Create an `RBACRule` to bind a ServiceAccount to a Role across multiple namespaces:
+
+```yaml
+apiVersion: rbac-controller.ggh41th.io/v1alpha1
+kind: RBACRule
+metadata:
+  name: developer-access
+spec:
+  bindings:
+  - name: dev-binding
+    subjects:
+    - kind: ServiceAccount
+      name: developer-sa
+      namespaceSelector:
+        matchLabels:
+          environment: development
+    roleBindings:
+    - role: developer-role
+      namespaceSelector:
+        matchLabels:
+          environment: development
+```
+
+Apply the resource:
+
+```bash
+kubectl apply -f rbacrule.yaml
+```
+
+For more examples, see the [examples](./examples) directory.
+
+## Usage
+
+The `RBACRule` resource supports the following subject types:
+
+- `User` - Kubernetes user
+- `Group` - Kubernetes group  
+- `ServiceAccount` - Kubernetes ServiceAccount
+
+### Namespace Selection
+
+You can select namespaces in three ways:
+
+1. **Explicit list**: `namespaces: [ns1, ns2, ns3]`
+2. **Label selector**: `namespaceSelector: {matchLabels: {env: prod}}`
+3. **Match expression**: `namespaceMatchExpression: "metadata.name in ['ns1', 'ns2']"`
+
+### Examples
+
+#### RoleBinding across multiple namespaces
+
+```yaml
+apiVersion: rbac-controller.ggh41th.io/v1alpha1
+kind: RBACRule
+metadata:
+  name: multi-ns-binding
+spec:
+  bindings:
+  - name: my-binding
+    subjects:
+    - kind: User
+      name: john@example.com
+      namespaces: [team-a, team-b, team-c]
+    roleBindings:
+    - role: edit
+      namespaces: [team-a, team-b, team-c]
+```
+
+#### ClusterRoleBinding for ServiceAccount
+
+```yaml
+apiVersion: rbac-controller.ggh41th.io/v1alpha1
+kind: RBACRule
+metadata:
+  name: cluster-binding
+spec:
+  bindings:
+  - name: cluster-admin-binding
+    subjects:
+    - kind: ServiceAccount
+      name: admin-sa
+      namespaces: [kube-system]
+    clusterRoleBindings:
+    - clusterRole: cluster-admin
+```
+
+See [examples](./examples) for more usage patterns.
+
+## Development
+
+### Building from Source
+
+```bash
+# Build the binary
+make build
+
+# Run tests
+make test
+
+# Build and push Docker image
+make docker-build docker-push IMG=<your-registry>/rbac-controller:tag
+```
+
+### Running Locally
+
+```bash
+# Install CRDs
 make install
+
+# Run controller locally against your kubeconfig cluster
+make run
 ```
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+### Testing
 
-```sh
-make deploy IMG=<some-registry>/rbac-controller:tag
+```bash
+# Run unit tests
+make test
+
+# Run e2e tests
+make test-e2e
 ```
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
+## Uninstallation
 
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
+To remove the controller and CRDs:
 
-```sh
-kubectl apply -k config/samples/
-```
-
->**NOTE**: Ensure that the samples has default values to test it out.
-
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
-
-```sh
+```bash
+# Delete sample resources
 kubectl delete -k config/samples/
-```
 
-**Delete the APIs(CRDs) from the cluster:**
+# Undeploy controller
+make undeploy
 
-```sh
+# Remove CRDs
 make uninstall
 ```
 
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following the options to release and provide this solution to the users.
-
-### By providing a bundle with all YAML files
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/rbac-controller:tag
-```
-
-**NOTE:** The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without its
-dependencies.
-
-2. Using the installer
-
-Users can just run 'kubectl apply -f <URL for YAML BUNDLE>' to install
-the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/rbac-controller/<tag or branch>/dist/install.yaml
-```
-
-### By providing a Helm Chart
-
-1. Build the chart using the optional helm plugin
-
-```sh
-kubebuilder edit --plugins=helm/v2-alpha
-```
-
-2. See that a chart was generated under 'dist/chart', and users
-can obtain this solution from there.
-
-**NOTE:** If you change the project, you need to update the Helm Chart
-using the same command above to sync the latest changes. Furthermore,
-if you create webhooks, you need to use the above command with
-the '--force' flag and manually ensure that any custom configuration
-previously added to 'dist/chart/values.yaml' or 'dist/chart/manager/manager.yaml'
-is manually re-applied afterwards.
-
 ## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
 
-**NOTE:** Run `make help` for more information on all potential `make` targets
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/feature-xyz`)
+3. Open a Pull Request with that feature branch.
 
 ## License
 
@@ -132,4 +209,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
